@@ -1,0 +1,40 @@
+name: Package release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  package:
+    name: Attach Hestia.zip
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Package files into a Hestia folder
+        run: |
+          mkdir -p build/Hestia
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="build" \
+            --exclude=".DS_Store" \
+            ./ build/Hestia/
+          (
+            cd build
+            zip -r Hestia.zip Hestia
+          )
+          unzip -l build/Hestia.zip
+
+      - name: Upload zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Hestia.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
